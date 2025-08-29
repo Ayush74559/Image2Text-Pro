@@ -2,69 +2,104 @@
 FastAPI application for Vercel deployment
 Uses demo OCR service for serverless compatibility
 """
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import io
 import os
 import sys
-from typing import Optional, List
+from typing import Optional
 
-# Add the backend directory to the Python path
-backend_path = os.path.join(os.path.dirname(__file__), '..')
-if backend_path not in sys.path:
-    sys.path.insert(0, backend_path)
+# Add the current directory to Python path for imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
 
-# Import Vercel-compatible OCR service
-try:
-    from app.services.ocr_service_vercel import OCRService
-except ImportError:
-    # Fallback import
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("ocr_service_vercel", 
-                                                  os.path.join(os.path.dirname(__file__), "services", "ocr_service_vercel.py"))
-    ocr_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(ocr_module)
-    OCRService = ocr_module.OCRService
+# Simple OCR service for Vercel
+class SimpleOCRService:
+    def __init__(self):
+        self.demo_mode = True
+    
+    def extract_text(self, image_file: bytes, language: str = 'en') -> dict:
+        """Demo OCR service"""
+        try:
+            from PIL import Image
+            image = Image.open(io.BytesIO(image_file))
+            width, height = image.size
+            format_name = image.format or "Unknown"
+            
+            demo_text = f"""🎯 Image2Text Pro Demo
+
+✅ Image processed successfully!
+
+📸 Image Details:
+• Format: {format_name}
+• Dimensions: {width} × {height} pixels
+• Language: {language.upper()}
+
+📝 Sample Extracted Text:
+This is a demonstration of our OCR capabilities. In a full deployment, this would contain the actual text extracted from your uploaded image using advanced OCR technology.
+
+🚀 Features:
+• Multi-language support
+• High accuracy text extraction
+• File format validation
+• Real-time processing
+
+💡 Note: This is a demo version running on Vercel. For real OCR processing, deploy the full version on platforms that support larger dependencies."""
+
+            return {
+                'text': demo_text,
+                'confidence': 95.0,
+                'language': language,
+                'demo_mode': True,
+                'engine': 'Demo Engine v1.0'
+            }
+        except Exception as e:
+            return {
+                'text': f'❌ Error processing image: {str(e)}',
+                'confidence': 0.0,
+                'language': language,
+                'demo_mode': True,
+                'error': str(e)
+            }
+    
+    def is_available(self) -> bool:
+        return True
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Image2Text Pro API (Vercel)",
-    description="OCR API for extracting text from images - Vercel Demo Version",
-    version="1.0.0",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    title="Image2Text Pro API (Vercel Demo)",
+    description="OCR API for extracting text from images - Demo Version",
+    version="1.0.0"
 )
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your domain
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Initialize OCR service
-ocr_service = OCRService()
+ocr_service = SimpleOCRService()
 
-# Allowed file extensions
+# Constants
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff'}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 def allowed_file(filename: str) -> bool:
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint"""
-    engine_info = ocr_service.get_engine_info()
     return JSONResponse({
         "status": "healthy",
         "message": "Image2Text Pro API is running (Vercel Demo)",
         "ocr_available": ocr_service.is_available(),
-        "engine_info": engine_info,
         "deployment": "Vercel",
         "demo_mode": True
     })
@@ -163,7 +198,7 @@ async def get_supported_languages():
 
 @app.get("/")
 async def root():
-    """Root endpoint redirect"""
+    """Root endpoint"""
     return JSONResponse({
         "message": "Image2Text Pro API (Vercel Demo)",
         "docs": "/api/docs",
@@ -171,7 +206,10 @@ async def root():
         "demo_mode": True
     })
 
-# Vercel requires the app to be exported as 'app'
+# Export the app for Vercel
+handler = app
+
+# For local testing
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

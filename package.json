@@ -1,0 +1,9 @@
+{
+  "name": "image2text-pro",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd frontend && npm ci && npm run build",
+    "start": "cd frontend && npm start"
+  },
+  "devDependencies": {}
+}

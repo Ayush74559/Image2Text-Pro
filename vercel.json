@@ -2,15 +2,18 @@
   "version": 2,
   "builds": [
     {
-      "src": "frontend/package.json",
+      "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "build"
+        "distDir": "frontend/build"
       }
     },
     {
       "src": "backend/main_vercel.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
     }
   ],
   "routes": [
@@ -19,20 +22,12 @@
       "dest": "/backend/main_vercel.py"
     },
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
-      "dest": "/frontend/build/$1"
+      "src": "/static/(.*)",
+      "dest": "/frontend/build/static/$1"
     },
     {
       "src": "/(.*)",
       "dest": "/frontend/build/index.html"
     }
-  ],
-  "env": {
-    "PYTHONPATH": "/var/task/backend"
-  },
-  "functions": {
-    "backend/main_vercel.py": {
-      "runtime": "python3.9"
-    }
-  }
+  ]
 }
