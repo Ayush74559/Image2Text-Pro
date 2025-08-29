@@ -1,0 +1,16 @@
+{
+  "name": "image2text-pro-backend",
+  "version": "1.0.0",
+  "description": "FastAPI backend for Image2Text Pro OCR application",
+  "main": "app/main.py",
+  "scripts": {
+    "start": "uvicorn app.main:app --host 0.0.0.0 --port 8000",
+    "dev": "uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "test": "python -m pytest tests/",
+    "lint": "flake8 app/",
+    "format": "black app/"
+  },
+  "keywords": ["fastapi", "ocr", "tesseract", "image-processing"],
+  "author": "Image2Text Pro Team",
+  "license": "MIT"
+}
